@@ -1,0 +1,10 @@
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+gallery.db
+public/uploads/
+node_modules/
+dist/
+build/
