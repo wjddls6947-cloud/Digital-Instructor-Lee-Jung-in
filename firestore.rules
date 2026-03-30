@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "wjddls6947@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    // Gallery rules
+    match /gallery/{itemId} {
+      allow read: if true; // 누구나 볼 수 있음
+      allow write: if false; // 관리자 모드 제거로 인해 앱을 통한 수정 비활성화
+    }
+
+    // Test connection
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

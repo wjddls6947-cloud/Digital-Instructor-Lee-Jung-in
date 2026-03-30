@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "GalleryItem": {
+      "title": "Gallery Item",
+      "description": "An item in the photo gallery",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the photo" },
+        "image": { "type": "string", "description": "URL of the image" },
+        "year": { "type": "string", "description": "Year category" },
+        "created_at": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["title", "image", "year"]
+    }
+  },
+  "firestore": {
+    "gallery": {
+      "schema": "GalleryItem",
+      "description": "Collection of gallery items"
+    }
+  }
+}

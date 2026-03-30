@@ -14,13 +14,12 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronLeft,
   Send,
   Award,
   Instagram
 } from 'lucide-react';
-import { CAREERS, GALLERY } from './constants';
-import { AdminGallery } from './components/AdminGallery';
-import { Lock, LogIn, LogOut, ShieldCheck } from 'lucide-react';
+import { CAREERS } from './constants';
 
 const profileImg = '/images/profile.png';
 
@@ -272,44 +271,85 @@ const Profile = () => {
 };
 
 const Gallery = () => {
-  const years = ['2026년', '2025년', '2024년', '2023년', '2022년 이전'];
-  const [selectedYear, setSelectedYear] = useState('2025년');
+  const years = ['전체', '2026년', '2025년', '2024년', '2023년', '2022년 이전'];
+  const [selectedYear, setSelectedYear] = useState('2026년');
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchGallery = async () => {
     try {
-      const res = await fetch('/api/gallery');
-      const data = await res.json();
+      const response = await fetch('/api/gallery');
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
       setGalleryItems(data);
+      setLoading(false);
     } catch (err) {
-      console.error('Failed to fetch gallery', err);
-      // Fallback to static data if API fails
-      setGalleryItems(GALLERY);
-    } finally {
+      console.error('Failed to fetch gallery from API', err);
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchGallery();
+    // 5분마다 자동으로 새로고침하여 파일질라 업로드 반영
+    const interval = setInterval(fetchGallery, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Sort gallery by year descending (latest first)
   const sortedGallery = [...galleryItems].sort((a, b) => {
     const getYearValue = (yearStr: string) => {
+      if (yearStr === '전체') return 9999;
       if (yearStr === '2022년 이전') return 2022;
       return parseInt(yearStr.replace('년', '')) || 0;
     };
     return getYearValue(b.year) - getYearValue(a.year);
   });
 
-  const filteredGallery = sortedGallery.filter(item => item.year === selectedYear);
+  const filteredGallery = selectedYear === '전체' 
+    ? sortedGallery 
+    : sortedGallery.filter(item => item.year === selectedYear);
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectedImage) return;
+    const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
+    const prevIndex = (currentIndex - 1 + filteredGallery.length) % filteredGallery.length;
+    setSelectedImage(filteredGallery[prevIndex]);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectedImage) return;
+    const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
+    const nextIndex = (currentIndex + 1) % filteredGallery.length;
+    setSelectedImage(filteredGallery[nextIndex]);
+  };
 
   const isVideo = (url: string) => {
     return url.match(/\.(mp4|webm|ogg|mov|m4v)$/i);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedImage) return;
+      if (e.key === 'ArrowLeft') {
+        const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
+        const prevIndex = (currentIndex - 1 + filteredGallery.length) % filteredGallery.length;
+        setSelectedImage(filteredGallery[prevIndex]);
+      } else if (e.key === 'ArrowRight') {
+        const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
+        const nextIndex = (currentIndex + 1) % filteredGallery.length;
+        setSelectedImage(filteredGallery[nextIndex]);
+      } else if (e.key === 'Escape') {
+        setSelectedImage(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImage, filteredGallery]);
 
   return (
     <section id="gallery" className="min-h-screen flex items-center py-24 bg-white">
@@ -341,10 +381,7 @@ const Gallery = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           </div>
         ) : (
-          <motion.div 
-            layout
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
-          >
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6">
             <AnimatePresence mode="popLayout">
               {filteredGallery.map((item) => (
                 <motion.div 
@@ -355,16 +392,16 @@ const Gallery = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
                   onClick={() => setSelectedImage(item)}
-                  className="relative flex flex-col rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 bg-slate-50 p-2"
+                  className="break-inside-avoid relative flex flex-col rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 bg-slate-50 p-2"
                 >
-                  <div className="relative aspect-square rounded-2xl overflow-hidden group-hover:shadow-md transition-shadow">
+                  <div className="relative rounded-2xl overflow-hidden group-hover:shadow-md transition-shadow bg-slate-100">
                     {isVideo(item.image) ? (
-                      <div className="w-full h-full relative">
+                      <div className="w-full relative">
                         <video 
                           src={item.image} 
                           muted
                           playsInline
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          className="w-full h-auto object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                           <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40">
@@ -376,10 +413,10 @@ const Gallery = () => {
                       <img 
                         src={item.image} 
                         alt={item.title} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     )}
-                    <div className="absolute inset-0 bg-indigo-900/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-indigo-900/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="mt-3 px-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -394,7 +431,7 @@ const Gallery = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
-          </motion.div>
+          </div>
         )}
         
         {!loading && filteredGallery.length === 0 && (
@@ -428,7 +465,23 @@ const Gallery = () => {
                 >
                   <X size={32} />
                 </button>
-                <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-slate-900">
+                <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-slate-900 relative group">
+                  {/* Navigation Arrows */}
+                  <button 
+                    onClick={handlePrev}
+                    className="absolute left-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-start pl-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-black/40 to-transparent text-white/80 hover:text-white"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft size={48} className="drop-shadow-lg" />
+                  </button>
+                  <button 
+                    onClick={handleNext}
+                    className="absolute right-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-end pr-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-black/40 to-transparent text-white/80 hover:text-white"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight size={48} className="drop-shadow-lg" />
+                  </button>
+
                   {isVideo(selectedImage.image) ? (
                     <video 
                       src={selectedImage.image} 
@@ -524,32 +577,7 @@ const Contact = () => {
   );
 };
 
-const Footer = ({ onUpdate }: { onUpdate: () => void }) => {
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      if (res.ok) {
-        setIsLoggedIn(true);
-        setError('');
-        setPassword('');
-      } else {
-        setError('비밀번호가 올바르지 않습니다.');
-      }
-    } catch (err) {
-      setError('로그인 중 오류가 발생했습니다.');
-    }
-  };
-
+const Footer = () => {
   return (
     <footer className="bg-slate-900 py-12 text-slate-400">
       <div className="max-w-7xl mx-auto px-6">
@@ -568,12 +596,6 @@ const Footer = ({ onUpdate }: { onUpdate: () => void }) => {
               <a href="#gallery" className="hover:text-white transition-colors">갤러리</a>
               <a href="#contact" className="hover:text-white transition-colors">문의</a>
             </div>
-            <button 
-              onClick={() => setIsAdminOpen(true)}
-              className="flex items-center gap-2 text-[10px] text-slate-600 hover:text-indigo-400 transition-colors mt-2 bg-slate-800/30 px-3 py-1 rounded-full border border-slate-800"
-            >
-              <Lock size={10} /> 관리자 모드
-            </button>
           </div>
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
@@ -581,106 +603,21 @@ const Footer = ({ onUpdate }: { onUpdate: () => void }) => {
           <p>본 홈페이지는 교육 홍보를 목적으로 제작되었습니다.</p>
         </div>
       </div>
-
-      {/* Admin Modal Overlay */}
-      <AnimatePresence>
-        {isAdminOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative"
-            >
-              <button 
-                onClick={() => setIsAdminOpen(false)}
-                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 transition-colors z-10"
-              >
-                <X size={24} />
-              </button>
-
-              <div className="p-8 md:p-12">
-                {!isLoggedIn ? (
-                  <div className="max-w-md mx-auto py-12">
-                    <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <ShieldCheck className="text-indigo-600 w-8 h-8" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-slate-900">관리자 로그인</h3>
-                      <p className="text-slate-500 mt-2">갤러리 관리를 위해 비밀번호를 입력해주세요.</p>
-                    </div>
-
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <div>
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="비밀번호 입력"
-                          className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900"
-                          autoFocus
-                        />
-                        {error && <p className="text-red-500 text-xs mt-2 ml-1">{error}</p>}
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-                      >
-                        <LogIn size={20} /> 로그인
-                      </button>
-                    </form>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                          <ShieldCheck className="text-green-600 w-6 h-6" />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900">관리자 세션 활성화됨</h3>
-                      </div>
-                      <button 
-                        onClick={() => setIsLoggedIn(false)}
-                        className="flex items-center gap-2 text-sm text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition-colors"
-                      >
-                        <LogOut size={16} /> 로그아웃
-                      </button>
-                    </div>
-                    
-                    <AdminGallery onUpdate={onUpdate} />
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </footer>
   );
 };
 
 export default function App() {
-  const [galleryUpdateTrigger, setGalleryUpdateTrigger] = useState(0);
-
-  const triggerGalleryUpdate = () => {
-    setGalleryUpdateTrigger(prev => prev + 1);
-  };
-
   return (
     <div className="min-h-screen selection:bg-indigo-100 selection:text-indigo-900">
       <Navbar />
       <main>
         <Hero />
         <Profile />
-        <Gallery key={galleryUpdateTrigger} />
+        <Gallery />
         <Contact />
       </main>
-      <Footer onUpdate={triggerGalleryUpdate} />
+      <Footer />
     </div>
   );
 }

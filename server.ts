@@ -50,7 +50,11 @@ db.exec(`
 // Initial data if empty
 const count = db.prepare("SELECT COUNT(*) as count FROM gallery").get() as { count: number };
 if (count.count === 0) {
-  const initialData = [];
+  const initialData = [
+    { title: 'AI 교육 현장', image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=800', year: '2025년' },
+    { title: '코딩 캠프', image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800', year: '2025년' },
+    { title: '디지털 새싹', image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=800', year: '2024년' }
+  ];
   const insert = db.prepare("INSERT INTO gallery (title, image, year) VALUES (?, ?, ?)");
   initialData.forEach(item => insert.run(item.title, item.image, item.year));
 }
