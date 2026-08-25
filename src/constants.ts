@@ -40,6 +40,11 @@ export const CAREERS = [
     description: '디지털 기기 활용·기초 코딩 교육 지원'
   },
   {
+    title: '오산 세교고등학교 정보교육 나눔캠프 강사',
+    period: '2025 - 현재',
+    description: '고등학생 멘토 교육 및 중학생 캠프 대상자 교육 캠프'
+  },
+  {
     title: '공주교육대학교 늘봄학교 강사',
     period: '2024 - 현재',
     description: '늘봄학교 디지털 교육 프로그램 운영'
@@ -88,11 +93,6 @@ export const CAREERS = [
     title: '순천향대학교 SW해커톤 대회 강사',
     period: '2025',
     description: '고등학생 대상 SW 해커톤 멘토링'
-  },
-  {
-    title: '오산 세교고등학교 정보교육 나눔캠프 강사',
-    period: '2025',
-    description: '고등학생 멘토 교육 및 중학생 캠프 대상자 교육 캠프'
   },
   {
     title: '용연초등학교 디지털교육 강사',

@@ -13,9 +13,6 @@ import {
   Sparkles,
   Menu,
   X,
-  ChevronRight,
-  ChevronLeft,
-  Send,
   Award,
   Instagram
 } from 'lucide-react';
@@ -36,7 +33,6 @@ const Navbar = () => {
   const navLinks = [
     { name: '홈', href: '#' },
     { name: '강사프로필', href: '#profile' },
-    { name: '갤러리', href: '#gallery' },
     { name: '강의 문의', href: '#contact' },
   ];
 
@@ -270,250 +266,6 @@ const Profile = () => {
   );
 };
 
-const Gallery = () => {
-  const years = ['전체', '2026년', '2025년', '2024년', '2023년', '2022년 이전'];
-  const [selectedYear, setSelectedYear] = useState('2026년');
-  const [selectedImage, setSelectedImage] = useState<any | null>(null);
-  const [galleryItems, setGalleryItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchGallery = async () => {
-    try {
-      const response = await fetch('/api/gallery');
-      if (!response.ok) throw new Error('Network response was not ok');
-      const data = await response.json();
-      setGalleryItems(data);
-      setLoading(false);
-    } catch (err) {
-      console.error('Failed to fetch gallery from API', err);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGallery();
-    // 5분마다 자동으로 새로고침하여 파일질라 업로드 반영
-    const interval = setInterval(fetchGallery, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Sort gallery by year descending (latest first)
-  const sortedGallery = [...galleryItems].sort((a, b) => {
-    const getYearValue = (yearStr: string) => {
-      if (yearStr === '전체') return 9999;
-      if (yearStr === '2022년 이전') return 2022;
-      return parseInt(yearStr.replace('년', '')) || 0;
-    };
-    return getYearValue(b.year) - getYearValue(a.year);
-  });
-
-  const filteredGallery = selectedYear === '전체' 
-    ? sortedGallery 
-    : sortedGallery.filter(item => item.year === selectedYear);
-
-  const handlePrev = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedImage) return;
-    const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
-    const prevIndex = (currentIndex - 1 + filteredGallery.length) % filteredGallery.length;
-    setSelectedImage(filteredGallery[prevIndex]);
-  };
-
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedImage) return;
-    const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
-    const nextIndex = (currentIndex + 1) % filteredGallery.length;
-    setSelectedImage(filteredGallery[nextIndex]);
-  };
-
-  const isVideo = (url: string) => {
-    return url.match(/\.(mp4|webm|ogg|mov|m4v)$/i);
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedImage) return;
-      if (e.key === 'ArrowLeft') {
-        const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
-        const prevIndex = (currentIndex - 1 + filteredGallery.length) % filteredGallery.length;
-        setSelectedImage(filteredGallery[prevIndex]);
-      } else if (e.key === 'ArrowRight') {
-        const currentIndex = filteredGallery.findIndex(item => item.id === selectedImage.id);
-        const nextIndex = (currentIndex + 1) % filteredGallery.length;
-        setSelectedImage(filteredGallery[nextIndex]);
-      } else if (e.key === 'Escape') {
-        setSelectedImage(null);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedImage, filteredGallery]);
-
-  return (
-    <section id="gallery" className="min-h-screen flex items-center py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6 w-full">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">활동 갤러리</h2>
-          <p className="text-slate-600 mb-8">아이들과 함께한 소중한 교육 현장의 기록입니다.</p>
-          
-          {/* Year Filters */}
-          <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-12">
-            {years.map((year) => (
-              <button
-                key={year}
-                onClick={() => setSelectedYear(year)}
-                className={`px-8 py-4 rounded-2xl text-lg md:text-xl font-bold transition-all ${
-                  selectedYear === year
-                    ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200 scale-105'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:scale-105'
-                }`}
-              >
-                {year}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : (
-          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6">
-            <AnimatePresence mode="popLayout">
-              {filteredGallery.map((item) => (
-                <motion.div 
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  onClick={() => setSelectedImage(item)}
-                  className="break-inside-avoid relative flex flex-col rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 bg-slate-50 p-2"
-                >
-                  <div className="relative rounded-2xl overflow-hidden group-hover:shadow-md transition-shadow bg-slate-100">
-                    {isVideo(item.image) ? (
-                      <div className="w-full relative">
-                        <video 
-                          src={item.image} 
-                          muted
-                          playsInline
-                          className="w-full h-auto object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                          <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40">
-                            <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <img 
-                        src={item.image} 
-                        alt={item.title} 
-                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-indigo-900/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className="mt-3 px-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                        {item.year}
-                      </span>
-                    </div>
-                    <p className="text-slate-800 font-bold text-xs md:text-sm line-clamp-2 leading-tight">
-                      {item.title}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-        
-        {!loading && filteredGallery.length === 0 && (
-          <div className="text-center py-20 text-slate-400">
-            해당 연도의 활동 사진이 아직 없습니다.
-          </div>
-        )}
-
-        {/* Admin Section - Removed from main flow */}
-        
-        {/* Lightbox Modal */}
-        <AnimatePresence>
-          {selectedImage && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
-              onClick={() => setSelectedImage(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button 
-                  onClick={() => setSelectedImage(null)}
-                  className="absolute -top-12 right-0 text-white hover:text-indigo-400 transition-colors p-2"
-                >
-                  <X size={32} />
-                </button>
-                <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-slate-900 relative group">
-                  {/* Navigation Arrows */}
-                  <button 
-                    onClick={handlePrev}
-                    className="absolute left-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-start pl-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-black/40 to-transparent text-white/80 hover:text-white"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft size={48} className="drop-shadow-lg" />
-                  </button>
-                  <button 
-                    onClick={handleNext}
-                    className="absolute right-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-end pr-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-l from-black/40 to-transparent text-white/80 hover:text-white"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight size={48} className="drop-shadow-lg" />
-                  </button>
-
-                  {isVideo(selectedImage.image) ? (
-                    <video 
-                      src={selectedImage.image} 
-                      controls 
-                      autoPlay
-                      className="w-full h-auto max-h-[75vh] object-contain mx-auto"
-                    />
-                  ) : (
-                    <img 
-                      src={selectedImage.image} 
-                      alt={selectedImage.title} 
-                      className="w-full h-auto max-h-[75vh] object-contain mx-auto"
-                    />
-                  )}
-                  <div className="bg-white p-6 w-full">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded">
-                        {selectedImage.year}
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900">{selectedImage.title}</h3>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </section>
-  );
-};
-
 const Contact = () => {
   return (
     <section id="contact" className="min-h-screen flex items-center py-24 bg-indigo-600 relative overflow-hidden">
@@ -593,7 +345,6 @@ const Footer = () => {
           <div className="flex flex-col items-center md:items-end gap-4">
             <div className="flex gap-8 text-sm font-medium">
               <a href="#profile" className="hover:text-white transition-colors">강사프로필</a>
-              <a href="#gallery" className="hover:text-white transition-colors">갤러리</a>
               <a href="#contact" className="hover:text-white transition-colors">문의</a>
             </div>
           </div>
@@ -614,7 +365,6 @@ export default function App() {
       <main>
         <Hero />
         <Profile />
-        <Gallery />
         <Contact />
       </main>
       <Footer />
